@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Car Racing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #0a0a2e, #16213e, #1a1a3e);
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(180deg, #000428 0%, #004e92 100%);
+            cursor: none;
+        }
+
+        .stars {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+
+        #score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        #highScore {
+            color: #ff00ff;
+            font-size: 18px;
+            margin-top: 5px;
+        }
+
+        #level {
+            font-size: 18px;
+            color: #ffff00;
+            text-shadow: 0 0 5px #ffff00;
+        }
+
+        #pauseBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.2s;
+            box-shadow: 0 3px 10px rgba(155, 89, 182, 0.4);
+        }
+
+        #pauseBtn:hover {
+            transform: scale(1.05);
+        }
+
+        #pauseScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 50;
+        }
+
+        #pauseScreen h1 {
+            color: #9b59b6;
+            font-size: 48px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px #9b59b6;
+        }
+
+        #resumeBtn {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        #resumeBtn:hover {
+            transform: scale(1.1);
+        }
+
+        #audioToggle {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.2s;
+            box-shadow: 0 3px 10px rgba(231, 76, 60, 0.4);
+        }
+
+        #audioToggle:hover {
+            transform: scale(1.05);
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        #gameOverScreen h1 {
+            color: #ff4444;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ff4444;
+        }
+
+        #gameOverScreen p {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        #restartBtn {
+            background: linear-gradient(45deg, #00ffff, #0066cc);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        #restartBtn:hover {
+            transform: scale(1.1);
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #0a0a2e, #16213e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        #startScreen h1 {
+            color: #00ffff;
+            font-size: 48px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px #00ffff;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px #00ffff;
+            }
+
+            to {
+                text-shadow: 0 0 30px #00ffff, 0 0 40px #00ffff;
+            }
+        }
+
+        #controls {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            color: #cccccc;
+        }
+
+        #startBtn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            color: white;
+            padding: 20px 40px;
+            font-size: 24px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        #startBtn:hover {
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+
+            #score,
+            #level {
+                font-size: 16px;
+                padding: 10px;
+            }
+
+            #gameOverScreen h1,
+            #startScreen h1 {
+                font-size: 32px;
+                text-align: center;
+            }
+
+            #controls {
+                font-size: 14px;
+                padding: 0 20px;
+            }
+
+            #startBtn,
+            #restartBtn {
+                padding: 15px 30px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="ui">
+            <div id="score">Score: 0</div>
+            <div id="highScore" style="color: #ff00ff; font-size: 18px; margin-top: 5px;">High Score: 0</div>
+            <div id="level">Level: 1</div>
+        </div>
+
+        <button id="pauseBtn" onclick="togglePause()">⏸ PAUSE</button>
+        <button id="audioToggle" onclick="toggleAudio()">🔊 SOUND ON</button>
+
+        <div id="pauseScreen">
+            <h1>⏸ PAUSED</h1>
+            <p style="font-size: 20px; margin-bottom: 20px;">Game paused - Take a break!</p>
+            <button id="resumeBtn" onclick="togglePause()">▶ RESUME</button>
+        </div>
+
+        <div id="startScreen">
+            <h1>🚀 SPACE CAR RACING 🚀</h1>
+            <div id="controls">
+                <p>Desktop: Use Arrow Keys or WASD to move</p>
+                <p>Mobile: Touch and drag to control your ship</p>
+                <p><strong>Press SPACEBAR, ESC, or P to pause</strong></p>
+                <p><strong>Avoid obstacles and survive as long as possible!</strong></p>
+            </div>
+            <button id="startBtn" onclick="startGame()">START RACING</button>
+        </div>
+
+        <div id="gameOverScreen">
+            <h1>GAME OVER</h1>
+            <p id="finalScore">Final Score: 0</p>
+            <p id="finalLevel">Level Reached: 1</p>
+            <button id="restartBtn" onclick="restartGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const pauseScreen = document.getElementById('pauseScreen');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const levelElement = document.getElementById('level');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const audioToggle = document.getElementById('audioToggle');
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game variables
+        let gameRunning = false;
+        let gamePaused = false;
+        let audioEnabled = true;
+        let score = 0;
+        let highScore = localStorage.getItem('spaceCarHighScore') || 0;
+        let level = 1;
+        let gameSpeed = 2;
+        let lastTime = 0;
+        highScoreElement.textContent = `High Score: ${highScore}`;
+
+        // Background music
+        let bgMusicOscillator = null;
+        let bgMusicGain = null;
+        let bgMusicInterval = null;
+
+        // Player object
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 100,
+            width: 60,
+            height: 40,
+            speed: 5,
+            color: '#00ffff',
+            shield: false,
+            trail: []
+        };
+
+        // Obstacles & Powerups
+        let obstacles = [];
+        let powerups = [];
+        let particles = [];
+        let stars = [];
+
+        // Input handling
+        const keys = {};
+        let touch = { x: 0, y: 0, active: false };
+
+        // Event listeners
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Touch controls
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            touch.x = e.touches[0].clientX - rect.left;
+            touch.y = e.touches[0].clientY - rect.top;
+            touch.active = true;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (touch.active) {
+                const rect = canvas.getBoundingClientRect();
+                touch.x = e.touches[0].clientX - rect.left;
+                touch.y = e.touches[0].clientY - rect.top;
+            }
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touch.active = false;
+        });
+
+        // Audio system (using Web Audio API for better browser compatibility)
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(frequency, duration, type = 'sine') {
+            if (!audioEnabled) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = type;
+
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playExplosion() {
+            playTone(150, 0.3, 'sawtooth');
+        }
+
+        function playLevelUp() {
+            playTone(440, 0.2);
+            setTimeout(() => playTone(554, 0.2), 100);
+            setTimeout(() => playTone(659, 0.2), 200);
+        }
+
+        // Advanced Audio System (Synth-wave Style)
+        const AudioEngine = {
+            ctx: null,
+            masterGain: null,
+            isPlaying: false,
+            bpm: 130,
+            nextNoteTime: 0,
+            schedulerTimer: null,
+            scheduleAheadTime: 0.1,
+            lookahead: 25.0,
+            beatCount: 0,
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = audioContext;
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.gain.value = 0.3;
+                    this.masterGain.connect(this.ctx.destination);
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            playTone(freq, time, duration, type = 'sine', vol = 0.1) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, time);
+                gain.gain.setValueAtTime(vol, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(time);
+                osc.stop(time + duration);
+            },
+
+            playKick(time) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.frequency.setValueAtTime(150, time);
+                osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
+                gain.gain.setValueAtTime(0.8, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(time);
+                osc.stop(time + 0.5);
+            },
+
+            playHiHat(time) {
+                const bufferSize = this.ctx.sampleRate * 0.1;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 10000;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05); // Short decay
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                noise.start(time);
+            },
+
+            playBass(time, note) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(note, time);
+
+                // Filter for "wub" sound
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, time);
+                filter.frequency.exponentialRampToValueAtTime(200, time + 0.2);
+
+                gain.gain.setValueAtTime(0.3, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(time);
+                osc.stop(time + 0.4);
+            },
+
+            scheduleNote(beatNumber, time) {
+                const secondsPerBeat = 60.0 / this.bpm;
+                const sixteenthTime = secondsPerBeat / 4;
+
+                // Driving Bassline (E minor pentatonic ish) - Eighth notes
+                if (beatNumber % 2 === 0) { // Every 8th note
+                    const loop = beatNumber % 32;
+                    let bassNote = 41.20; // E1
+                    if (loop >= 16 && loop < 24) bassNote = 49.00; // G1
+                    if (loop >= 24 && loop < 32) bassNote = 55.00; // A1
+                    this.playBass(time, bassNote);
+                }
+
+                // Drums (Kick on 1, 5, 9, 13) - 4/4 Beat
+                if (beatNumber % 4 === 0) {
+                    this.playKick(time);
+                }
+
+                // Hi-Hats (every 16th note, alternating accent)
+                if (beatNumber % 1 === 0) {
+                    this.playHiHat(time);
+                }
+
+                // Melody - Arpeggio (Cyberpunk feel)
+                if (beatNumber % 2 === 0) {
+                    const arpPattern = [329.63, 392.00, 493.88, 659.25, 493.88, 392.00, 329.63, 246.94]; // Em arp
+                    const noteIndex = (beatNumber / 2) % 8;
+                    // Add some rhythmic interest
+                    if (beatNumber % 16 !== 14) {
+                        this.playTone(arpPattern[noteIndex] * 2, time, 0.1, 'square', 0.05);
+                    }
+                }
+            },
+
+            scheduler() {
+                while (this.nextNoteTime < this.ctx.currentTime + this.scheduleAheadTime) {
+                    this.scheduleNote(this.beatCount, this.nextNoteTime);
+                    const secondsPerBeat = 60.0 / this.bpm;
+                    this.nextNoteTime += 0.25 * secondsPerBeat; // Advance by 16th note
+                    this.beatCount++;
+                }
+                this.schedulerTimer = setTimeout(() => this.scheduler(), this.lookahead);
+            },
+
+            start() {
+                if (this.isPlaying) return;
+                this.init();
+                this.isPlaying = true;
+                this.beatCount = 0;
+                this.nextNoteTime = this.ctx.currentTime + 0.1;
+                this.scheduler();
+            },
+
+            stop() {
+                this.isPlaying = false;
+                clearTimeout(this.schedulerTimer);
+            }
+        };
+
+
+
+        // Background music wrappers
+        function startBackgroundMusic() {
+            if (!audioEnabled) return;
+            AudioEngine.start();
+        }
+
+        function stopBackgroundMusic() {
+            AudioEngine.stop();
+        }
+
+        // Toggle pause
+        function togglePause() {
+            if (!gameRunning) return;
+
+            gamePaused = !gamePaused;
+
+            if (gamePaused) {
+                pauseScreen.style.display = 'flex';
+                pauseBtn.textContent = '▶ RESUME';
+                stopBackgroundMusic();
+            } else {
+                pauseScreen.style.display = 'none';
+                pauseBtn.textContent = '⏸ PAUSE';
+                if (audioEnabled) {
+                    startBackgroundMusic();
+                }
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Toggle audio
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            audioToggle.textContent = audioEnabled ? '🔊 SOUND ON' : '🔇 SOUND OFF';
+
+            if (audioEnabled && gameRunning && !gamePaused) {
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                startBackgroundMusic();
+            } else {
+                stopBackgroundMusic();
+            }
+        }
+
+        // Add keyboard shortcut for pause (Escape, P key, or Spacebar)
+        window.addEventListener('keydown', (e) => {
+            if ((e.code === 'Escape' || e.code === 'KeyP' || e.code === 'Space') && gameRunning) {
+                e.preventDefault(); // Prevent spacebar from scrolling the page
+                togglePause();
+            }
+            keys[e.code] = true;
+        });
+
+        // Initialize stars
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    speed: Math.random() * 2 + 1,
+                    size: Math.random() * 2 + 1
+                });
+            }
+        }
+
+        // Update stars
+        function updateStars() {
+            stars.forEach(star => {
+                star.y += star.speed + gameSpeed;
+                if (star.y > canvas.height) {
+                    star.y = -5;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+        }
+
+        // Draw stars
+        function drawStars() {
+            ctx.fillStyle = 'white';
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Update player
+        function updatePlayer() {
+            // Keyboard controls
+            if (keys['ArrowLeft'] || keys['KeyA']) {
+                player.x -= player.speed;
+            }
+            if (keys['ArrowRight'] || keys['KeyD']) {
+                player.x += player.speed;
+            }
+            if (keys['ArrowUp'] || keys['KeyW']) {
+                player.y -= player.speed;
+            }
+            if (keys['ArrowDown'] || keys['KeyS']) {
+                player.y += player.speed;
+            }
+
+            // Touch controls
+            if (touch.active) {
+                const dx = touch.x - player.x;
+                const dy = (touch.y - 100) - player.y; // Offset y by -100 to keep ship visible above finger
+                player.x += dx * 0.15; // Slightly faster response
+                player.y += dy * 0.15;
+            }
+
+            // Keep player within bounds
+            player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+            player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+            // Update trail
+            player.trail.push({ x: player.x + player.width / 2, y: player.y + player.height + 5, life: 1.0 });
+            for (let i = player.trail.length - 1; i >= 0; i--) {
+                player.trail[i].y += gameSpeed;
+                player.trail[i].life -= 0.1;
+                if (player.trail[i].life <= 0) player.trail.splice(i, 1);
+            }
+        }
+
+        // Draw player (space car)
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+
+            // Shield effect
+            if (player.shield) {
+                ctx.strokeStyle = `rgba(0, 255, 255, ${0.5 + Math.sin(Date.now() / 100) * 0.2})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, 35, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            const w = player.width;
+            const h = player.height;
+
+            // Wheels (4 hover pads)
+            ctx.fillStyle = '#444';
+            // Front Left
+            ctx.fillRect(-w / 2 - 2, -h / 2 + 5, 8, 12);
+            // Front Right
+            ctx.fillRect(w / 2 - 6, -h / 2 + 5, 8, 12);
+            // Rear Left
+            ctx.fillRect(-w / 2 - 4, h / 2 - 15, 10, 15);
+            // Rear Right
+            ctx.fillRect(w / 2 - 6, h / 2 - 15, 10, 15);
+
+            // Main Body (Chassis)
+            ctx.fillStyle = player.color; // Cyan
+            ctx.beginPath();
+            ctx.moveTo(-10, -h / 2); // Nose tip left
+            ctx.lineTo(10, -h / 2);  // Nose tip right
+            ctx.lineTo(15, -h / 4);  // Side flair right
+            ctx.lineTo(15, h / 2 - 5);   // Rear right
+            ctx.lineTo(5, h / 2);    // Rear center right
+            ctx.lineTo(-5, h / 2);   // Rear center left
+            ctx.lineTo(-15, h / 2 - 5);  // Rear left
+            ctx.lineTo(-15, -h / 4); // Side flair left
+            ctx.closePath();
+            ctx.fill();
+
+            // Cockpit (Windshield)
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.moveTo(-5, -5);
+            ctx.lineTo(5, -5);
+            ctx.lineTo(7, 10);
+            ctx.lineTo(-7, 10);
+            ctx.closePath();
+            ctx.fill();
+
+            // Spoiler / Wing
+            ctx.fillStyle = '#0088aa'; // Darker cyan
+            ctx.fillRect(-18, h / 2 - 8, 36, 6);
+
+            // Engine glow (Exhaust)
+            ctx.fillStyle = '#00ffff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00ffff';
+            ctx.beginPath();
+            ctx.rect(-8, h / 2, 16, 5);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+        }
+
+        // Create obstacle
+        function createObstacle() {
+            const type = Math.random() > 0.5 ? 'asteroid' : 'enemy';
+            // Generate random shape for asteroid
+            const vertices = [];
+            if (type === 'asteroid') {
+                const sides = 8;
+                for (let i = 0; i < sides; i++) {
+                    const angle = (i / sides) * Math.PI * 2;
+                    const r = 20 + Math.random() * 15;
+                    vertices.push({
+                        x: Math.cos(angle) * r,
+                        y: Math.sin(angle) * r
+                    });
+                }
+            }
+
+            obstacles.push({
+                x: Math.random() * (canvas.width - 50),
+                y: -50,
+                width: 50,
+                height: 50,
+                speed: gameSpeed + Math.random() * 2,
+                type: type,
+                vertices: vertices,
+                rotation: 0,
+                rotSpeed: (Math.random() - 0.5) * 0.1
+            });
+        }
+
+        function createPowerup() {
+            powerups.push({
+                x: Math.random() * (canvas.width - 40),
+                y: -40,
+                width: 30,
+                height: 30,
+                speed: gameSpeed,
+                type: 'shield',
+                pulse: 0
+            });
+        }
+
+        // Update obstacles
+        function updateObstacles() {
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].y += obstacles[i].speed;
+                obstacles[i].rotation += obstacles[i].rotSpeed;
+
+                if (obstacles[i].y > canvas.height) {
+                    obstacles.splice(i, 1);
+                    score += 10;
+                }
+            }
+        }
+
+        // Update powerups
+        function updatePowerups() {
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const p = powerups[i];
+                p.y += p.speed;
+                p.pulse += 0.1;
+
+                if (p.y > canvas.height) {
+                    powerups.splice(i, 1);
+                }
+            }
+        }
+
+        // Draw obstacles
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                ctx.save();
+                ctx.translate(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2);
+                ctx.rotate(obstacle.rotation);
+
+                if (obstacle.type === 'asteroid') {
+                    ctx.fillStyle = '#8B4513';
+                    ctx.beginPath();
+                    obstacle.vertices.forEach((v, i) => {
+                        if (i === 0) ctx.moveTo(v.x, v.y);
+                        else ctx.lineTo(v.x, v.y);
+                    });
+                    ctx.closePath();
+                    ctx.fill();
+                    // Shadow
+                    ctx.strokeStyle = '#654321';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else {
+                    // Draw enemy ship
+                    ctx.fillStyle = '#ff4444';
+                    ctx.beginPath();
+                    ctx.moveTo(0, 20);
+                    ctx.lineTo(15, -15);
+                    ctx.lineTo(0, -5);
+                    ctx.lineTo(-15, -15);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ff9999'; // Cockpit
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            });
+        }
+
+        // Collision detection
+        function checkCollisions() {
+            obstacles.forEach(obstacle => {
+                if (player.x < obstacle.x + obstacle.width &&
+                    player.x + player.width > obstacle.x &&
+                    player.y < obstacle.y + obstacle.height &&
+                    player.y + player.height > obstacle.y) {
+
+                    if (player.shield) {
+                        player.shield = false;
+                        obstacles.splice(obstacles.indexOf(obstacle), 1);
+                        createExplosion(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2);
+                        playExplosion();
+                    } else {
+                        playExplosion();
+                        createExplosion(player.x + player.width / 2, player.y + player.height / 2);
+                        gameOver();
+                    }
+                }
+            });
+
+            // Powerup collisions
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const p = powerups[i];
+                if (player.x < p.x + p.width &&
+                    player.x + player.width > p.x &&
+                    player.y < p.y + p.height &&
+                    player.y + player.height > p.y) {
+
+                    if (p.type === 'shield') {
+                        player.shield = true;
+                        playLevelUp(); // Use LevelUp sound for powerup
+                    }
+                    powerups.splice(i, 1);
+                }
+            }
+        }
+
+        // Create explosion effect
+        function createExplosion(x, y) {
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 1,
+                    decay: 0.02
+                });
+            }
+        }
+
+        // Update particles
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Draw particles
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+                ctx.restore();
+            });
+        }
+
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            gamePaused = false;
+            stopBackgroundMusic();
+            pauseBtn.style.display = 'none';
+            audioToggle.style.display = 'none';
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('spaceCarHighScore', highScore);
+                highScoreElement.textContent = `High Score: ${highScore}`;
+            }
+            document.getElementById('finalScore').textContent = `Final Score: ${score}`;
+            document.getElementById('finalLevel').textContent = `Level Reached: ${level}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // Start game
+        function startGame() {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            startScreen.style.display = 'none';
+            pauseBtn.style.display = 'block';
+            audioToggle.style.display = 'block';
+            gameRunning = true;
+            gamePaused = false;
+            score = 0;
+            level = 1;
+            gameSpeed = 2;
+            obstacles = [];
+            powerups = [];
+            particles = [];
+            player.shield = false;
+            player.trail = [];
+
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 100;
+
+            createStars();
+            if (audioEnabled) {
+                startBackgroundMusic();
+            }
+            gameLoop();
+        }
+
+        // Restart game
+        function restartGame() {
+            gameOverScreen.style.display = 'none';
+            startGame();
+        }
+
+        // Update game logic
+        function update() {
+            updateStars();
+            updatePlayer();
+            updateObstacles();
+            updatePowerups();
+            updateParticles();
+            checkCollisions();
+
+            // Spawn obstacles
+            if (Math.random() < 0.02 + level * 0.01) {
+                createObstacle();
+            }
+
+            // Spawn powerups
+            if (Math.random() < 0.002) {
+                createPowerup();
+            }
+
+            // Level progression
+            const newLevel = Math.floor(score / 500) + 1;
+            if (newLevel > level) {
+                level = newLevel;
+                gameSpeed += 1.0;
+                playLevelUp();
+            }
+
+            // Update UI
+            scoreElement.textContent = `Score: ${score}`;
+            levelElement.textContent = `Level: ${level}`;
+        }
+
+        // Render game
+        function render() {
+            // Clear canvas with gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#000428');
+            gradient.addColorStop(1, '#004e92');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawStars();
+            drawTrail(); // New trail function
+            drawPlayer();
+            drawObstacles();
+            drawPowerups(); // New powerup draw
+            drawParticles();
+        }
+
+        function drawTrail() {
+            player.trail.forEach(t => {
+                ctx.globalAlpha = t.life;
+                ctx.fillStyle = '#00ffff';
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 3 * t.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            });
+        }
+
+        function drawPowerups() {
+            powerups.forEach(p => {
+                ctx.save();
+                ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+                const scale = 1 + Math.sin(p.pulse) * 0.1;
+                ctx.scale(scale, scale);
+
+                // Draw shield icon
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+                ctx.fill();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('S', 0, 0);
+
+                ctx.restore();
+            });
+        }
+
+        // Game loop
+        function gameLoop(currentTime) {
+            if (!gameRunning || gamePaused) return;
+
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            update();
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize the game
+        createStars();
+        pauseBtn.style.display = 'none';
+        audioToggle.style.display = 'none';
+    </script>
+</body>
+
+</html>
