@@ -80,6 +80,36 @@
             text-shadow: 0 0 5px #ffff00;
         }
 
+        #powerupStatus {
+            position: absolute;
+            top: 20px;
+            right: 180px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+
+        .powerup-indicator {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            border: 2px solid;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
         #pauseBtn {
             position: absolute;
             top: 20px;
@@ -292,6 +322,8 @@
             <div id="level">Level: 1</div>
         </div>
 
+        <div id="powerupStatus"></div>
+
         <button id="pauseBtn" onclick="togglePause()">⏸ PAUSE</button>
         <button id="audioToggle" onclick="toggleAudio()">🔊 SOUND ON</button>
 
@@ -331,6 +363,7 @@
         const levelElement = document.getElementById('level');
         const pauseBtn = document.getElementById('pauseBtn');
         const audioToggle = document.getElementById('audioToggle');
+        const powerupStatusElement = document.getElementById('powerupStatus');
 
         // Set canvas size
         function resizeCanvas() {
@@ -347,7 +380,7 @@
         let score = 0;
         let highScore = localStorage.getItem('spaceCarHighScore') || 0;
         let level = 1;
-        let gameSpeed = 2;
+        let gameSpeed = 4;
         let lastTime = 0;
         highScoreElement.textContent = `High Score: ${highScore}`;
 
@@ -363,8 +396,13 @@
             width: 60,
             height: 40,
             speed: 5,
+            baseSpeed: 5,
             color: '#00ffff',
             shield: false,
+            invincible: false,
+            speedBoost: false,
+            scoreMultiplier: 1,
+            powerupTimers: {},
             trail: []
         };
 
@@ -808,7 +846,7 @@
 
             obstacles.push({
                 x: Math.random() * (canvas.width - 50),
-                y: -50,
+                y: -100 - Math.random() * 100, // Spawn further up
                 width: 50,
                 height: 50,
                 speed: gameSpeed + Math.random() * 2,
@@ -820,13 +858,24 @@
         }
 
         function createPowerup() {
+            const types = ['shield', 'speed', 'multiplier', 'invincibility'];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            const colors = {
+                shield: '#00ffff',      // Cyan
+                speed: '#ffff00',       // Yellow
+                multiplier: '#ff00ff',  // Magenta
+                invincibility: '#00ff00' // Green
+            };
+
             powerups.push({
                 x: Math.random() * (canvas.width - 40),
                 y: -40,
                 width: 30,
                 height: 30,
                 speed: gameSpeed,
-                type: 'shield',
+                type: type,
+                color: colors[type],
                 pulse: 0
             });
         }
@@ -839,7 +888,7 @@
 
                 if (obstacles[i].y > canvas.height) {
                     obstacles.splice(i, 1);
-                    score += 10;
+                    score += 10 * player.scoreMultiplier;
                 }
             }
         }
@@ -906,8 +955,15 @@
                     player.y < obstacle.y + obstacle.height &&
                     player.y + player.height > obstacle.y) {
 
-                    if (player.shield) {
+                    // Check invincibility first
+                    if (player.invincible) {
+                        obstacles.splice(obstacles.indexOf(obstacle), 1);
+                        createExplosion(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2);
+                        playExplosion();
+                        score += 50 * player.scoreMultiplier; // Bonus for destroying with invincibility
+                    } else if (player.shield) {
                         player.shield = false;
+                        delete player.powerupTimers.shield;
                         obstacles.splice(obstacles.indexOf(obstacle), 1);
                         createExplosion(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2);
                         playExplosion();
@@ -927,9 +983,30 @@
                     player.y < p.y + p.height &&
                     player.y + player.height > p.y) {
 
-                    if (p.type === 'shield') {
-                        player.shield = true;
-                        playLevelUp(); // Use LevelUp sound for powerup
+                    // Apply powerup effect
+                    switch (p.type) {
+                        case 'shield':
+                            player.shield = true;
+                            player.powerupTimers.shield = Date.now() + 5000; // 5 seconds
+                            playLevelUp();
+                            break;
+                        case 'speed':
+                            player.speedBoost = true;
+                            player.speed = player.baseSpeed * 1.5;
+                            player.powerupTimers.speed = Date.now() + 5000;
+                            playTone(600, 0.2);
+                            break;
+                        case 'multiplier':
+                            player.scoreMultiplier = 2;
+                            player.powerupTimers.multiplier = Date.now() + 10000; // 10 seconds
+                            playTone(800, 0.2);
+                            setTimeout(() => playTone(1000, 0.2), 100);
+                            break;
+                        case 'invincibility':
+                            player.invincible = true;
+                            player.powerupTimers.invincibility = Date.now() + 3000; // 3 seconds
+                            playTone(1200, 0.3, 'square');
+                            break;
                     }
                     powerups.splice(i, 1);
                 }
@@ -1005,7 +1082,7 @@
             gamePaused = false;
             score = 0;
             level = 1;
-            gameSpeed = 2;
+            gameSpeed = 4;
             obstacles = [];
             powerups = [];
             particles = [];
@@ -1029,6 +1106,7 @@
         }
 
         // Update game logic
+        // Update game logic
         function update() {
             updateStars();
             updatePlayer();
@@ -1037,8 +1115,28 @@
             updateParticles();
             checkCollisions();
 
+            // Update powerup timers
+            const now = Date.now();
+            if (player.powerupTimers.shield && now > player.powerupTimers.shield) {
+                player.shield = false;
+                delete player.powerupTimers.shield;
+            }
+            if (player.powerupTimers.speed && now > player.powerupTimers.speed) {
+                player.speedBoost = false;
+                player.speed = player.baseSpeed;
+                delete player.powerupTimers.speed;
+            }
+            if (player.powerupTimers.multiplier && now > player.powerupTimers.multiplier) {
+                player.scoreMultiplier = 1;
+                delete player.powerupTimers.multiplier;
+            }
+            if (player.powerupTimers.invincibility && now > player.powerupTimers.invincibility) {
+                player.invincible = false;
+                delete player.powerupTimers.invincibility;
+            }
+
             // Spawn obstacles
-            if (Math.random() < 0.02 + level * 0.01) {
+            if (Math.random() < 0.03 + level * 0.015) {
                 createObstacle();
             }
 
@@ -1051,13 +1149,30 @@
             const newLevel = Math.floor(score / 500) + 1;
             if (newLevel > level) {
                 level = newLevel;
-                gameSpeed += 1.0;
+                gameSpeed += 1.5;
                 playLevelUp();
+                showNotification("🚀 SPEED INCREASED!");
             }
 
             // Update UI
             scoreElement.textContent = `Score: ${score}`;
             levelElement.textContent = `Level: ${level}`;
+
+            // Update powerup status display
+            let powerupHTML = '';
+            if (player.shield) {
+                powerupHTML += '<div class="powerup-indicator" style="border-color: #00ffff; color: #00ffff;">🛡 Shield</div>';
+            }
+            if (player.speedBoost) {
+                powerupHTML += '<div class="powerup-indicator" style="border-color: #ffff00; color: #ffff00;">⚡ Speed</div>';
+            }
+            if (player.scoreMultiplier > 1) {
+                powerupHTML += '<div class="powerup-indicator" style="border-color: #ff00ff; color: #ff00ff;">✖ x2 Score</div>';
+            }
+            if (player.invincible) {
+                powerupHTML += '<div class="powerup-indicator" style="border-color: #00ff00; color: #00ff00;">⭐ Invincible</div>';
+            }
+            powerupStatusElement.innerHTML = powerupHTML;
         }
 
         // Render game
@@ -1095,21 +1210,34 @@
                 const scale = 1 + Math.sin(p.pulse) * 0.1;
                 ctx.scale(scale, scale);
 
-                // Draw shield icon
-                ctx.strokeStyle = '#00ffff';
+                // Draw based on type
+                ctx.strokeStyle = p.color;
                 ctx.lineWidth = 3;
                 ctx.beginPath();
                 ctx.arc(0, 0, 15, 0, Math.PI * 2);
                 ctx.stroke();
 
-                ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+                // Convert hex to rgba for transparency
+                const r = parseInt(p.color.slice(1, 3), 16);
+                const g = parseInt(p.color.slice(3, 5), 16);
+                const b = parseInt(p.color.slice(5, 7), 16);
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
                 ctx.fill();
 
+                // Draw icon based on type
                 ctx.fillStyle = '#fff';
-                ctx.font = '16px Arial';
+                ctx.font = 'bold 16px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('S', 0, 0);
+
+                const icons = {
+                    shield: '🛡',
+                    speed: '⚡',
+                    multiplier: '✖',
+                    invincibility: '⭐'
+                };
+
+                ctx.fillText(icons[p.type] || 'P', 0, 0);
 
                 ctx.restore();
             });
@@ -1132,6 +1260,33 @@
         createStars();
         pauseBtn.style.display = 'none';
         audioToggle.style.display = 'none';
+
+        function showNotification(text) {
+            const notification = document.createElement('div');
+            notification.style.position = 'absolute';
+            notification.style.top = '50%';
+            notification.style.left = '50%';
+            notification.style.transform = 'translate(-50%, -50%)';
+            notification.style.color = '#00ffff';
+            notification.style.fontSize = '40px';
+            notification.style.fontWeight = 'bold';
+            notification.style.textShadow = '0 0 20px #00ffff';
+            notification.style.zIndex = '1000';
+            notification.style.pointerEvents = 'none';
+            notification.textContent = text;
+            document.getElementById('gameContainer').appendChild(notification);
+
+            let opacity = 1;
+            const fade = setInterval(() => {
+                opacity -= 0.05;
+                notification.style.opacity = opacity;
+                notification.style.transform = `translate(-50%, ${-50 - (1 - opacity) * 50}%)`;
+                if (opacity <= 0) {
+                    clearInterval(fade);
+                    notification.remove();
+                }
+            }, 50);
+        }
     </script>
 </body>
 
