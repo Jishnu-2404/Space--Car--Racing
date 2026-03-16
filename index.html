@@ -702,9 +702,9 @@
         }
 
         // Update stars
-        function updateStars() {
+        function updateStars(dtFactor) {
             stars.forEach(star => {
-                star.y += star.speed + gameSpeed;
+                star.y += (star.speed + gameSpeed) * dtFactor;
                 if (star.y > canvas.height) {
                     star.y = -5;
                     star.x = Math.random() * canvas.width;
@@ -723,19 +723,20 @@
         }
 
         // Update player
-        function updatePlayer() {
+        function updatePlayer(dtFactor) {
+            const moveSpeed = player.speed * dtFactor;
             // Keyboard controls
             if (keys['ArrowLeft'] || keys['KeyA']) {
-                player.x -= player.speed;
+                player.x -= moveSpeed;
             }
             if (keys['ArrowRight'] || keys['KeyD']) {
-                player.x += player.speed;
+                player.x += moveSpeed;
             }
             if (keys['ArrowUp'] || keys['KeyW']) {
-                player.y -= player.speed;
+                player.y -= moveSpeed;
             }
             if (keys['ArrowDown'] || keys['KeyS']) {
-                player.y += player.speed;
+                player.y += moveSpeed;
             }
 
             // Touch controls
@@ -753,8 +754,8 @@
             // Update trail
             player.trail.push({ x: player.x + player.width / 2, y: player.y + player.height + 5, life: 1.0 });
             for (let i = player.trail.length - 1; i >= 0; i--) {
-                player.trail[i].y += gameSpeed;
-                player.trail[i].life -= 0.1;
+                player.trail[i].y += gameSpeed * dtFactor;
+                player.trail[i].life -= 0.1 * dtFactor;
                 if (player.trail[i].life <= 0) player.trail.splice(i, 1);
             }
         }
@@ -881,10 +882,10 @@
         }
 
         // Update obstacles
-        function updateObstacles() {
+        function updateObstacles(dtFactor) {
             for (let i = obstacles.length - 1; i >= 0; i--) {
-                obstacles[i].y += obstacles[i].speed;
-                obstacles[i].rotation += obstacles[i].rotSpeed;
+                obstacles[i].y += obstacles[i].speed * dtFactor;
+                obstacles[i].rotation += obstacles[i].rotSpeed * dtFactor;
 
                 if (obstacles[i].y > canvas.height) {
                     obstacles.splice(i, 1);
@@ -894,11 +895,11 @@
         }
 
         // Update powerups
-        function updatePowerups() {
+        function updatePowerups(dtFactor) {
             for (let i = powerups.length - 1; i >= 0; i--) {
                 const p = powerups[i];
-                p.y += p.speed;
-                p.pulse += 0.1;
+                p.y += p.speed * dtFactor;
+                p.pulse += 0.1 * dtFactor;
 
                 if (p.y > canvas.height) {
                     powerups.splice(i, 1);
@@ -1028,12 +1029,12 @@
         }
 
         // Update particles
-        function updateParticles() {
+        function updateParticles(dtFactor) {
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= p.decay;
+                p.x += p.vx * dtFactor;
+                p.y += p.vy * dtFactor;
+                p.life -= p.decay * dtFactor;
 
                 if (p.life <= 0) {
                     particles.splice(i, 1);
@@ -1096,7 +1097,8 @@
             if (audioEnabled) {
                 startBackgroundMusic();
             }
-            gameLoop();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
         }
 
         // Restart game
@@ -1107,12 +1109,13 @@
 
         // Update game logic
         // Update game logic
-        function update() {
-            updateStars();
-            updatePlayer();
-            updateObstacles();
-            updatePowerups();
-            updateParticles();
+        function update(deltaTime) {
+            const dtFactor = deltaTime / (1000 / 60); // Normalize to 60 FPS
+            updateStars(dtFactor);
+            updatePlayer(dtFactor);
+            updateObstacles(dtFactor);
+            updatePowerups(dtFactor);
+            updateParticles(dtFactor);
             checkCollisions();
 
             // Update powerup timers
@@ -1247,10 +1250,14 @@
         function gameLoop(currentTime) {
             if (!gameRunning || gamePaused) return;
 
+            if (!lastTime) lastTime = currentTime;
             const deltaTime = currentTime - lastTime;
             lastTime = currentTime;
 
-            update();
+            // Cap deltaTime to avoid huge jumps (e.g. after tab switch)
+            const cappedDelta = Math.min(deltaTime, 50);
+
+            update(cappedDelta);
             render();
 
             requestAnimationFrame(gameLoop);
